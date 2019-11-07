@@ -137,11 +137,12 @@ int main(int argc, char *argv[])
 	uint32_t nBits = 0;
 	uint32_t startNonce = 0;
 	uint32_t unixtime = 0;
+	uint32_t numKeystones = 0;
 
-	if((argc-1) < 3)
+	if((argc-1) < 4)
 	{
-		fprintf(stderr, "Usage: %s [options] <pubkey> \"<timestamp>\" <nBits> <startNonce> <unixtime>\n", argv[0]);
-		return 0;		
+		fprintf(stderr, "Usage: %s [options] <pubkey> \"<timestamp>\" <nBits> <num_keystones> <startNonce> <unixtime>\n", argv[0]);
+		return 0;
 	}
 
 	pubkey_len = strlen(argv[1]) / 2; // One byte is represented as two hex characters, thus we divide by two to get real length.
@@ -174,22 +175,23 @@ int main(int argc, char *argv[])
 	strncpy(pubkey, argv[1], sizeof(pubkey));
 	strncpy(timestamp, argv[2], sizeof(timestamp));
 	sscanf(argv[3], "%lu", (long unsigned int *)&nBits);
+	sscanf(argv[4], "%lu", (long unsigned int *)&numKeystones);
 	char *endptr = NULL;
-	if (argc > 4)
+	if (argc > 5)
 	{
-		startNonce = strtoul(argv[4], &endptr, 0);
+		startNonce = strtoul(argv[5], &endptr, 0);
 		if (!endptr)
 		{
-			fprintf(stderr, "Invalid start nonce: %s\n", argv[4]);
+			fprintf(stderr, "Invalid start nonce: %s\n", argv[5]);
 			return 1;
 		}
 	}
-	if (argc > 5)
+	if (argc > 6)
 	{
-		unixtime = strtoul(argv[5], &endptr, 0);
+		unixtime = strtoul(argv[6], &endptr, 0);
 		if (!endptr)
 		{
-			fprintf(stderr, "Invalid unix time: %s\n", argv[5]);
+			fprintf(stderr, "Invalid unix time: %s\n", argv[6]);
 			return 1;
 		}
 	}
@@ -295,11 +297,23 @@ int main(int argc, char *argv[])
 
 	// Now that the data is serialized
 	// we hash it with SHA256 and then hash that result to get merkle hash
+	const unsigned int contextSize = 4u /* height */ + numKeystones * 32u;
+        unsigned char* emptyContainer = (unsigned char*)calloc(contextSize, 1);
 	SHA256(transaction->serializedData, serializedLen, hash1);
 	SHA256(hash1, 32, hash2);
 
+	// reuse hash1 to calculate hash of empty context info container
+	unsigned char nodes[64]; // 32 left child, 32 right child
+        SHA256(emptyContainer, contextSize, hash1);
+        memcpy(nodes, hash1, 32);
+        memcpy(nodes+32, hash2, 32);
+
+        // calculate top level root
+        unsigned char topLevelRoot[32];
+        SHA256(nodes, 64, topLevelRoot);
+
 	// This copy isn't necessary imo, but here for clarity
-	memcpy(transaction->merkleHash, hash2, 32);
+	memcpy(transaction->merkleHash, topLevelRoot, 32);
 
 	char *merkleHash = bin2hex(transaction->merkleHash, 32);
 	byteswap(transaction->merkleHash, 32); 
@@ -355,7 +369,6 @@ int main(int argc, char *argv[])
 			*pNonce = startNonce;
 			if(startNonce > 4294967294LL)
 			{
-				//printf("\nBlock found!\nHash: %s\nNonce: %u\nUnix time: %u", blockHash, startNonce, unixtime);
 				unixtime++;
 				*pUnixtime = unixtime;
 				startNonce = 0;
@@ -372,6 +385,7 @@ int main(int argc, char *argv[])
 	free(transaction->scriptSig);
 	free(transaction->pubkeyScript);
 	free(transaction);
+	free(emptyContainer);
 
 	return 0;
 }

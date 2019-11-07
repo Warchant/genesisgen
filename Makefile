@@ -4,6 +4,9 @@ SOURCE = genesis.c
 CFLAGS = -g -Wall -Werror
 LDFLAGS = -lcrypto
 
+LDFLAGS+= -L/usr/local/opt/openssl/lib 
+CFLAGS+= -I/usr/local/opt/openssl/include
+
 all: $(BIN)
 
 $(BIN): $(SOURCE)
