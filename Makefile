@@ -1,7 +1,7 @@
 
 BIN = genesis
 SOURCE = genesis.c
-CFLAGS = -g -Wall -Werror
+CFLAGS = -g
 LDFLAGS = -lcrypto
 
 LDFLAGS+= -L/usr/local/opt/openssl/lib 
@@ -24,3 +24,9 @@ test: $(BIN)
 	@echo
 	./$(BIN) 048E794284AD7E4D776919BDA05CDD38447D89B436BDAF5F65EBE9D7AD3A0B084908B88162BB60B1AA5ED6542063A30FC9584A335F656A54CD9F66D6C742B67F55 "More Jobs, Faster Growth and Now, the Threat of a Trade War" $(DIFF) 640408438 1524015188
 	@echo
+
+
+regtest: $(BIN)
+	./$(BIN) 047c62bbf7f5aa4dd5c16bad99ac621b857fac4e93de86e45f5ada73404eeb44dedcf377b03c14a24e9d51605d9dd2d8ddaef58760d9c4bb82d9c8f06d96e79488 "VeriBlock" 545259519 2 26803043 1573131669
+	@echo
+
