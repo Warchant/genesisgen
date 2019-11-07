@@ -195,7 +195,7 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 	}
-	printf("nBits: 0x%x\nstartNonce: %u\nunixtime: %u\n", nBits, startNonce, unixtime);
+	printf("nBits: 0x%x\nnum_keystones %u\nstartNonce: %u\nunixtime: %u\n", nBits, numKeystones, startNonce, unixtime);
 
 	pubkey_len = strlen(pubkey) >> 1;
 	scriptSig_len = timestamp_len;
